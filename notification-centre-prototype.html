@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Activity Notification Centre</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;font-family:-apple-system,'Segoe UI','Inter',sans-serif;background:#f9fafb;color:#111827;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:2px}
+@keyframes slideInRight{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState}=React;
+
+/* ═══════════════════════════════════════
+   COLOUR TOKENS — identical to gmc_70.html
+═══════════════════════════════════════ */
+const C={
+  blue:"#3B56F0",blueL:"#EEF0FD",blueM:"#C5CBF9",
+  green:"#16a34a",greenL:"#f0fdf4",greenB:"#bbf7d0",greenT:"#15803d",
+  red:"#dc2626",redL:"#fef2f2",redB:"#fecaca",redT:"#b91c1c",
+  amber:"#d97706",amberL:"#fffbeb",amberB:"#fde68a",amberT:"#92400e",
+  gray:"#6b7280",grayL:"#f3f4f6",grayB:"#e5e7eb",
+  border:"#e5e7eb",bg:"#ffffff",bg2:"#f9fafb",
+  text:"#111827",t2:"#6b7280",t3:"#9ca3af",
+};
+
+const LOGO_SRC="data:image/png;base64,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";
+
+const ICONS={
+  home:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  kyc:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  goods:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+  comm:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  alert:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  pay:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+  aml:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  admin:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>,
+  audit:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  ledger:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+  merchants:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M4 9v10h16V9"/></svg>,
+  analytics:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  auth:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  hier:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="2" y="18" width="6" height="4" rx="1"/><rect x="9" y="18" width="6" height="4" rx="1"/><rect x="16" y="18" width="6" height="4" rx="1"/><line x1="12" y1="6" x2="12" y2="13"/><line x1="5" y1="20" x2="12" y2="13"/><line x1="12" y1="13" x2="12" y2="20"/><line x1="19" y1="20" x2="12" y2="13"/></svg>,
+  ontology:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  connectra:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M6 9v6"/><path d="M9 6h4a4 4 0 0 1 4 4v0"/><path d="M9 18h4a4 4 0 0 0 4-4v0"/><circle cx="20" cy="6" r="2"/><circle cx="20" cy="18" r="2"/></svg>,
+  gmc:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  activity:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>,
+  chevRight:<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  close:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  search:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
+  // Plain bell — notifications ON, click to mute
+  bell:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  // Crossed bell — notifications MUTED, click to unmute
+  bellOff:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="3" y1="3" x2="21" y2="21"/></svg>,
+};
+
+const MODULE_ICON={GMC:ICONS.gmc,"FT AML":ICONS.aml,Admin:ICONS.admin,Payments:ICONS.pay};
+
+function initials(name){
+  return name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+}
+
+/* ═══════════════════════════════════════
+   MOCK DATA — Option C: has_actor decided
+   once per event type, mixed list on purpose.
+═══════════════════════════════════════ */
+const ITEMS=[
+  {id:"act_001",module:"GMC",hasActor:true,actor:"Roushan Gupta",text:"Declined your request REQ_1206",status:"unread",created_at:"2026-09-08T09:10:00",deep_link:696},
+  {id:"act_002",module:"GMC",hasActor:true,actor:"Roushan Gupta",text:"Approved your Freeze Account request for CONS_343",status:"unread",created_at:"2026-09-08T08:10:00",deep_link:696},
+  {id:"act_003",module:"FT AML",hasActor:false,text:"STR Draft Submission CASE-2026-0004130 needs review",status:"unread",created_at:"2026-09-08T09:00:00",deep_link:null},
+  {id:"act_004",module:"GMC",hasActor:false,text:"Manual Treasury Transfer TXN_BHP_CV is awaiting second approval",status:"read",created_at:"2026-09-07T11:00:00",deep_link:696},
+  {id:"act_005",module:"GMC",hasActor:true,actor:"Dipanshu",text:"Requested a second approval on TXN_BHP_CV",status:"read",created_at:"2026-09-07T10:30:00",deep_link:696},
+  {id:"act_006",module:"FT AML",hasActor:true,actor:"Kanishk Jha",text:"Reassigned CASE-2026-0004130 to you",status:"read",created_at:"2026-09-07T09:15:00",deep_link:null},
+  {id:"act_007",module:"Admin",hasActor:false,text:"Your role 'AML Checker L2' was deactivated",status:"read",created_at:"2026-09-06T14:20:00",deep_link:null},
+  {id:"act_008",module:"Payments",hasActor:false,text:"Batch Config update for Client 100 completed",status:"read",created_at:"2026-09-06T08:00:00",deep_link:null},
+  {id:"act_009",module:"GMC",hasActor:false,text:"Execution failed for Delete Account Type request 695",status:"unread",created_at:"2026-09-05T17:00:00",deep_link:null},
+  {id:"act_010",module:"GMC",hasActor:true,actor:"Prashant Singh",text:"Commented on your Batch Config request",status:"read",created_at:"2026-09-05T12:00:00",deep_link:696},
+];
+
+/* Generated tail — mechanically extends the hand-authored rows above
+   back to day 30, so the panel has enough real volume to demonstrate
+   infinite scroll across the full 30-day retention window (Section 11).
+   Cycles through the same event shapes already established above,
+   never invents a new module or a new has_actor rule. */
+const FILLER_TEMPLATES=[
+  {module:"GMC",hasActor:true,actor:"Roushan Gupta",text:"Approved your Account Type Limit request",deep_link:696},
+  {module:"GMC",hasActor:false,text:"Manual Treasury Transfer is awaiting second approval",deep_link:696},
+  {module:"FT AML",hasActor:false,text:"STR Draft Submission needs review",deep_link:null},
+  {module:"Payments",hasActor:false,text:"Batch Config update completed",deep_link:null},
+  {module:"GMC",hasActor:true,actor:"Dipanshu",text:"Requested a second approval on a Batch Config change",deep_link:696},
+  {module:"Admin",hasActor:false,text:"Your role permissions were updated",deep_link:null},
+  {module:"FT AML",hasActor:true,actor:"Kanishk Jha",text:"Reassigned a case to you",deep_link:null},
+];
+for(let day=6;day<=30;day++){
+  const t=FILLER_TEMPLATES[day%FILLER_TEMPLATES.length];
+  const d=new Date("2026-09-08T00:00:00");
+  d.setDate(d.getDate()-day);
+  d.setHours(9+((day*3)%8),15,0,0);
+  ITEMS.push({
+    id:`act_gen_${day}`,
+    module:t.module,hasActor:t.hasActor,actor:t.actor,text:t.text,
+    status:"read",
+    created_at:d.toISOString().slice(0,19),
+    deep_link:t.deep_link,
+  });
+}
+
+function timeAgo(iso){
+  const d=new Date(iso);const now=new Date("2026-09-08T11:00:00");
+  const mins=Math.floor((now-d)/60000);
+  if(mins<60)return `${mins}m ago`;
+  const hrs=Math.floor(mins/60);
+  if(hrs<24)return `${hrs}h ago`;
+  const days=Math.floor(hrs/24);
+  return days===1?"Yesterday":`${days}d ago`;
+}
+
+/* ═══════════════════════════════════════
+   GMC's real Btn/table styling, reused as-is
+═══════════════════════════════════════ */
+function Btn({children,variant="dark",onClick,sx={},disabled}){
+  const vs={dark:{background:"#111827",color:"#fff",border:"none"},outline:{background:C.bg,border:`1px solid ${C.grayB}`,color:C.t2}};
+  return<button disabled={disabled} onClick={onClick} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,fontWeight:500,borderRadius:7,cursor:disabled?"not-allowed":"pointer",fontSize:13,padding:"7px 16px",...vs[variant],...sx}}>{children}</button>;
+}
+const thS={textAlign:"left",fontSize:11,fontWeight:600,color:C.t2,padding:"10px 16px",background:C.bg,borderBottom:`1px solid ${C.border}`,whiteSpace:"nowrap",letterSpacing:".06em",textTransform:"uppercase"};
+const tdS={padding:"13px 16px",borderBottom:`1px solid ${C.border}`,fontSize:12.5,color:C.text,verticalAlign:"middle"};
+
+const STATUS_STYLE={Approved:{bg:C.greenL,c:C.greenT,b:C.greenB},Pending:{bg:C.amberL,c:C.amberT,b:C.amberB},"Execution Failed":{bg:C.redL,c:C.redT,b:C.redB}};
+const MOCK_TICKETS=[
+  {id:696,activityId:"ACT_D9Q432SC...",name:"Payments Update Account...",status:"Approved",maker:"Dipanshu",created:"Sep 1, 2026, 08:00:56 PM",target:199},
+  {id:695,activityId:"ACT_DA6QGA4C...",name:"Payments Delete Account ...",status:"Execution Failed",maker:"Dipanshu",created:"Sep 1, 2026, 08:00:27 PM",target:199},
+  {id:694,activityId:"ACT_D9Q42R4C...",name:"Payments Update Account...",status:"Approved",maker:"Dipanshu",created:"Sep 1, 2026, 07:59:47 PM",target:761},
+  {id:693,activityId:"ACT_D9Q42R4C...",name:"Payments Update Account...",status:"Pending",maker:"Dipanshu",created:"Sep 1, 2026, 07:59:05 PM",target:794},
+  {id:692,activityId:"ACT_DA6QGHKC...",name:"Payments Activate/Deacti...",status:"Approved",maker:"Dipanshu",created:"Sep 1, 2026, 07:45:38 PM",target:4},
+  {id:691,activityId:"ACT_DA6QGHKC...",name:"Payments Activate/Deacti...",status:"Approved",maker:"Dipanshu",created:"Sep 1, 2026, 07:44:58 PM",target:4},
+  {id:690,activityId:"ACT_DA6QHB4C...",name:"Payments Activate/Deacti...",status:"Approved",maker:"Dipanshu",created:"Sep 1, 2026, 07:41:05 PM",target:34},
+  {id:689,activityId:"ACT_DA6QHB4C...",name:"Payments Activate/Deacti...",status:"Approved",maker:"Dipanshu",created:"Sep 1, 2026, 07:39:23 PM",target:34},
+];
+
+/* ═══════════════════════════════════════
+   ACTIVITY ROW — two fixed shells, decided
+   once per event type (item.hasActor), never
+   chosen at render time. Circular avatar for
+   a real actor, square module icon otherwise.
+═══════════════════════════════════════ */
+function ActivityRow({item,onOpenRequest}){
+  const unread=item.status==="unread";
+  const leadIcon = item.hasActor
+    ? <div style={{width:26,height:26,borderRadius:"50%",background:C.grayL,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10.5,fontWeight:700,color:C.t2,flexShrink:0}}>{initials(item.actor)}</div>
+    : <div style={{width:26,height:26,borderRadius:7,background:C.grayL,display:"flex",alignItems:"center",justifyContent:"center",color:C.t2,flexShrink:0}}>{MODULE_ICON[item.module]}</div>;
+
+  return(
+    <div
+      onClick={()=>item.deep_link&&onOpenRequest&&onOpenRequest(item.deep_link)}
+      style={{display:"flex",alignItems:"flex-start",gap:10,padding:"11px 16px",borderBottom:`1px solid ${C.border}`,background:unread?"#F7F8FF":C.bg,cursor:item.deep_link?"pointer":"default"}}
+      onMouseEnter={e=>{if(item.deep_link)e.currentTarget.style.background="#EFF1FF"}}
+      onMouseLeave={e=>{e.currentTarget.style.background=unread?"#F7F8FF":C.bg}}>
+      {leadIcon}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:12.5,fontWeight:unread?600:400,color:C.text,lineHeight:1.4}}>
+          {item.hasActor && <span style={{fontWeight:600}}>{item.actor} </span>}
+          {item.hasActor ? item.text.charAt(0).toLowerCase()+item.text.slice(1) : item.text}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
+          <span style={{fontSize:11,color:C.t3}}>{item.module}</span>
+          <span style={{fontSize:11,color:C.t3}}>·</span>
+          <span style={{fontSize:11,color:C.t3}}>{timeAgo(item.created_at)}</span>
+        </div>
+      </div>
+      {unread&&<span style={{width:6,height:6,borderRadius:"50%",background:C.blue,flexShrink:0,marginTop:5}}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   PANEL BODY — header with Mark all read
+   and the single global mute toggle, tabs,
+   row list, footer link.
+═══════════════════════════════════════ */
+function PanelBody({onOpenRequest,muted,onToggleMute}){
+  const [tab,setTab]=useState("all");
+  const unread=ITEMS.filter(i=>i.status==="unread");
+  const list=tab==="unread"?unread:ITEMS;
+  return(
+    <>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px",borderBottom:`1px solid ${C.border}`}}>
+        <span style={{fontSize:14,fontWeight:700,color:C.text}}>Activity</span>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <span style={{fontSize:11.5,color:C.blue,fontWeight:500,cursor:"pointer"}}>Mark all read</span>
+          <span
+            onClick={onToggleMute}
+            title={muted?"Click to unmute":"Mute notifications"}
+            style={{display:"flex",cursor:"pointer",color:muted?C.t3:C.text}}>
+            {muted?ICONS.bellOff:ICONS.bell}
+          </span>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:16,padding:"8px 16px 0",borderBottom:`1px solid ${C.border}`}}>
+        {[["all","All"],["unread",`Unread${unread.length?` ${unread.length}`:""}`]].map(([k,l])=>(
+          <button key={k} onClick={()=>setTab(k)} style={{padding:"7px 2px",background:"none",border:"none",borderBottom:tab===k?`2px solid ${C.blue}`:"2px solid transparent",color:tab===k?C.blue:C.t2,fontWeight:tab===k?600:400,fontSize:12.5,cursor:"pointer"}}>{l}</button>
+        ))}
+      </div>
+      <div style={{flex:1,overflowY:"auto"}}>
+        {list.map(i=><ActivityRow key={i.id} item={i} onOpenRequest={onOpenRequest}/>)}
+        <div style={{padding:"14px 16px",textAlign:"center",fontSize:11.5,color:C.t3}}>
+          Showing activity from the last 30 days
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════
+   RIGHT-HAND PANEL — locked display mode.
+   Drawer on the far right of the content
+   area, same edge GMC's own Request Detail
+   drawer already uses.
+═══════════════════════════════════════ */
+const PANEL_BOX={width:360,background:C.bg,borderRadius:0,border:`1px solid ${C.border}`,borderTop:"none",borderBottom:"none",borderRight:"none",boxShadow:"-8px 0 24px rgba(0,0,0,.10)",overflow:"hidden"};
+
+function RightPanel({onOpenRequest,muted,onToggleMute}){
+  return(
+    <div style={{position:"absolute",top:0,right:0,bottom:0,...PANEL_BOX,zIndex:60,display:"flex",flexDirection:"column",animation:"slideInRight .18s ease"}}>
+      <PanelBody onOpenRequest={onOpenRequest} muted={muted} onToggleMute={onToggleMute}/>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   NAV — GMC's real sidebar list, unmodified
+   order. Activity trigger locked to the
+   sidebar footer, above the user chip.
+═══════════════════════════════════════ */
+const NAV=[
+  {icon:"home",label:"Homepage",route:"home"},
+  {icon:"kyc",label:"Customers & KYC",arrow:true},
+  {icon:"goods",label:"Digital Goods",arrow:true},
+  {icon:"comm",label:"Communication",arrow:true},
+  {icon:"alert",label:"Alerts",arrow:true},
+  {icon:"pay",label:"Payments",arrow:true},
+  {icon:"aml",label:"FT AML",arrow:true},
+  {icon:"admin",label:"Admin",arrow:true},
+  {icon:"audit",label:"Audit Trails"},
+  {icon:"ledger",label:"Ledger",arrow:true},
+  {icon:"merchants",label:"Merchants & KYB",arrow:true},
+  {icon:"analytics",label:"Analytics",arrow:true},
+  {icon:"auth",label:"Auth",arrow:true},
+  {icon:"hier",label:"Hierarchy Management"},
+  {icon:"gmc",label:"GMC",route:"gmc-tickets"},
+  {icon:"ontology",label:"Ontology"},
+  {icon:"connectra",label:"Connectra",arrow:true},
+];
+
+/* Collapse icon — matches the "Toggle Sidebar" control shown in the
+   real product screenshot (two vertical panes). */
+const COLLAPSE_ICON=<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>;
+
+function Sidebar({panelOpen,onToggle,unreadCount,collapsed,onToggleCollapse,page,onNavigate}){
+  const [hoverTip,setHoverTip]=useState(null);
+
+  const NavRow=({icon,label,arrow,active,onClick,badge,tip})=>(
+    <div
+      onClick={onClick}
+      onMouseEnter={()=>collapsed&&setHoverTip(tip||label)}
+      onMouseLeave={()=>setHoverTip(null)}
+      style={{position:"relative",display:"flex",alignItems:"center",gap:8,padding:collapsed?"8px 0":"6px 14px",justifyContent:collapsed?"center":"flex-start",cursor:onClick?"pointer":"default",color:active?C.blue:C.text,fontWeight:active?600:400,fontSize:13,background:active?C.blueL:"transparent",borderLeft:active&&!collapsed?`3px solid ${C.blue}`:"3px solid transparent"}}>
+      <span style={{color:active?C.blue:C.t2,display:"flex",flexShrink:0,position:"relative"}}>
+        {icon}
+        {collapsed&&badge>0&&<span style={{position:"absolute",top:-4,right:-6,width:7,height:7,borderRadius:"50%",background:C.red}}/>}
+      </span>
+      {!collapsed&&<span style={{flex:1}}>{label}</span>}
+      {!collapsed&&badge>0&&<span style={{background:C.red,color:"#fff",fontSize:10,fontWeight:700,borderRadius:10,padding:"1px 6px",lineHeight:1.6}}>{badge}</span>}
+      {!collapsed&&arrow&&<span style={{fontSize:11,color:active?C.blue:C.t3}}>›</span>}
+      {collapsed&&hoverTip===(tip||label)&&
+        <span style={{position:"absolute",left:"100%",top:"50%",transform:"translateY(-50%)",marginLeft:8,background:"#111827",color:"#fff",fontSize:11.5,fontWeight:500,padding:"5px 9px",borderRadius:6,whiteSpace:"nowrap",zIndex:80,boxShadow:"0 4px 12px rgba(0,0,0,.2)"}}>{tip||label}</span>}
+    </div>
+  );
+
+  return(
+    <aside style={{width:collapsed?56:220,flexShrink:0,background:C.bg2,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",height:"100%",overflowY:"auto",transition:"width .15s ease"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:collapsed?"12px 8px":"12px 14px 10px",borderBottom:`1px solid ${C.border}`,justifyContent:collapsed?"center":"flex-start"}}>
+        {collapsed
+          ? <img src={LOGO_SRC} alt="Fyscal" style={{height:14,width:"auto",objectFit:"contain",maxWidth:40}}/>
+          : <img src={LOGO_SRC} alt="Fyscal Technologies" style={{height:20,width:"auto",objectFit:"contain"}}/>
+        }
+        {!collapsed &&
+          <button onClick={onToggleCollapse} title="Toggle Sidebar" style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:C.t3,display:"flex",padding:3}}>
+            {COLLAPSE_ICON}
+          </button>
+        }
+      </div>
+      {collapsed&&
+        <div style={{display:"flex",justifyContent:"center",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
+          <button onClick={onToggleCollapse} title="Toggle Sidebar" style={{background:"none",border:"none",cursor:"pointer",color:C.t3,display:"flex",padding:3}}>
+            {COLLAPSE_ICON}
+          </button>
+        </div>
+      }
+
+      <nav style={{flex:1,padding:"6px 0",overflowY:"auto"}}>
+        <div style={{fontSize:10.5,fontWeight:600,color:C.t3,padding:"8px 14px 3px",letterSpacing:".07em",textTransform:"uppercase"}}>Platform</div>
+        {NAV.map(n=>(
+          <NavRow key={n.label} icon={ICONS[n.icon]} label={n.label} arrow={n.arrow} active={n.route===page} onClick={n.route?()=>onNavigate(n.route):undefined}/>
+        ))}
+      </nav>
+
+      {/* Activity trigger — locked to sidebar footer, above the user chip */}
+      <div onClick={onToggle} style={{cursor:"pointer",borderTop:`1px solid ${C.border}`}}>
+        <NavRow icon={ICONS.activity} label="Activity" active={panelOpen} badge={unreadCount}/>
+      </div>
+
+      <div style={{padding:collapsed?"10px 0":"10px 14px",borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8,justifyContent:collapsed?"center":"flex-start"}}>
+        <div style={{width:26,height:26,borderRadius:"50%",background:C.blue,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0}}>UG</div>
+        {!collapsed&&
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12.5,fontWeight:500,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>Utkarsh Giri</div>
+            <div style={{fontSize:11,color:C.t3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>ut*****@*****ech.com</div>
+          </div>
+        }
+      </div>
+    </aside>
+  );
+}
+
+/* Full detail for the one request the mock links to, keyed by id so a
+   notification's deep link can open this exact modal. */
+const REQUEST_DETAIL={
+  696:{
+    requestId:"PAYACT_DAB...",status:"Approved",target:199,
+    created:"Sep 1, 2026, 08:00 PM",updated:"Sep 1, 2026, 08:01 PM",
+    requestedBy:"Dipanshu",actedBy:"Utkarsh",
+    domain:"Payments/Configs/Account Types",action:"Payments Update Account Type Limits",
+    checkerProgress:"1 / 1 checkers acted",
+    reason:"ff",attachments:"No attachments",
+    diff:[{field:"Wallet Limit",current:"100000",proposed:"50000"}],
+    context:[{field:"Transactions allowed",value:"Bank Transfer, Scan And Pay"}],
+  },
+};
+
+function RequestDetailModal({requestId,onClose}){
+  const [tab,setTab]=useState("maker");
+  const d=REQUEST_DETAIL[requestId];
+  if(!d)return null;
+  const s=STATUS_STYLE[d.status];
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+      <div style={{width:640,maxHeight:"85vh",background:C.bg,borderRadius:10,boxShadow:"0 20px 60px rgba(0,0,0,.25)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+          <span style={{fontSize:15,fontWeight:700,color:C.text}}>Request Details</span>
+          <span onClick={onClose} style={{color:C.t3,cursor:"pointer",display:"flex"}}>{ICONS.close}</span>
+        </div>
+        <div style={{padding:"16px 20px",overflowY:"auto",flex:1}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px 24px",marginBottom:16}}>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:3}}>Request ID</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:12.5,color:C.text,background:C.grayL,padding:"2px 8px",borderRadius:5}}>{d.requestId}</span>
+                <span style={{display:"inline-flex",alignItems:"center",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:500,background:s.bg,color:s.c,border:`1px solid ${s.b}`}}>{d.status}</span>
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:3}}>Created</div>
+              <div style={{fontSize:12.5,color:C.text}}>{d.created}</div>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:3}}>Target ID</div>
+              <span style={{fontSize:12.5,color:C.text,background:C.grayL,padding:"2px 8px",borderRadius:5}}>{d.target}</span>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:3}}>Updated</div>
+              <div style={{fontSize:12.5,color:C.text}}>{d.updated}</div>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:3}}>Requested By</div>
+              <div style={{fontSize:12.5,color:C.text}}>{d.requestedBy}</div>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:3}}>Acted By</div>
+              <div style={{fontSize:12.5,color:C.text}}>{d.actedBy}</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,paddingTop:14,borderTop:`1px solid ${C.border}`,marginBottom:16}}>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:4}}>Domain</div>
+              <div style={{fontSize:12.5,fontWeight:600,color:C.text}}>{d.domain}</div>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:4}}>Action</div>
+              <div style={{fontSize:12.5,fontWeight:600,color:C.text}}>{d.action}</div>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.t3,marginBottom:4}}>Checker Progress</div>
+              <div style={{fontSize:12.5,fontWeight:600,color:C.text}}>{d.checkerProgress}</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:16}}>
+            {[["maker","Maker Submission"],["remarks","Remarks"]].map(([k,l])=>(
+              <button key={k} onClick={()=>setTab(k)} style={{padding:"6px 14px",borderRadius:7,border:`1px solid ${tab===k?C.text:C.grayB}`,background:C.bg,color:C.text,fontSize:12.5,fontWeight:500,cursor:"pointer"}}>{l}</button>
+            ))}
+          </div>
+          {tab==="maker"&&<>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:18}}>
+              <div>
+                <div style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:4}}>Reason</div>
+                <div style={{fontSize:12.5,color:C.t2}}>{d.reason}</div>
+              </div>
+              <div>
+                <div style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:4}}>Attachments</div>
+                <div style={{fontSize:12.5,color:C.t2}}>{d.attachments}</div>
+              </div>
+            </div>
+            <div style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:8}}>Data Difference</div>
+            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:18}}>
+              <thead><tr>
+                <th style={{...thS,padding:"6px 0",background:"none"}}>Field</th>
+                <th style={{...thS,padding:"6px 0",background:"none"}}>Current Value</th>
+                <th style={{...thS,padding:"6px 0",background:"none"}}>Proposed Value</th>
+              </tr></thead>
+              <tbody>
+                {d.diff.map((r,i)=>(
+                  <tr key={i}>
+                    <td style={{...tdS,padding:"8px 0",border:"none"}}>{r.field}</td>
+                    <td style={{...tdS,padding:"8px 0",border:"none",color:C.red}}>{r.current}</td>
+                    <td style={{...tdS,padding:"8px 0",border:"none",color:C.greenT}}>{r.proposed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:8}}>Additional Context</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr>
+                <th style={{...thS,padding:"6px 0",background:"none"}}>Field</th>
+                <th style={{...thS,padding:"6px 0",background:"none"}}>Value</th>
+              </tr></thead>
+              <tbody>
+                {d.context.map((r,i)=>(
+                  <tr key={i}>
+                    <td style={{...tdS,padding:"8px 0",border:"none"}}>{r.field}</td>
+                    <td style={{...tdS,padding:"8px 0",border:"none"}}>{r.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>}
+          {tab==="remarks"&&<div style={{fontSize:12.5,color:C.t3,padding:"20px 0",textAlign:"center"}}>No remarks on this request.</div>}
+        </div>
+        <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"flex-end",flexShrink:0}}>
+          <Btn variant="outline" onClick={onClose}>Close</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomepageView(){
+  return(
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:6}}>
+      <div style={{fontSize:20,color:C.t3}}>Welcome</div>
+      <div style={{fontSize:28,fontWeight:700,color:C.text}}>Utkarsh Giri</div>
+    </div>
+  );
+}
+
+function TicketsTable({onOpenRequest}){
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{padding:"20px 24px 12px",flexShrink:0}}>
+        <div style={{fontSize:22,fontWeight:700,color:C.text,marginBottom:4}}>GMC Tickets</div>
+        <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t3}}>
+          <span>GMC</span><span style={{fontSize:11}}>›</span><span style={{color:C.t2,fontWeight:500}}>Tickets</span>
+        </div>
+      </div>
+      <div style={{padding:"0 24px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",border:`1px solid ${C.grayB}`,borderRadius:6,height:34,padding:"0 10px",gap:6}}>
+          {ICONS.search}
+          <span style={{fontSize:13,color:C.t3}}>Search by request ID or activity name</span>
+        </div>
+        <Btn variant="outline">Show Filters</Btn>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"0 24px"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>
+            <th style={thS}>Request ID</th><th style={thS}>Activity ID</th><th style={thS}>Activity Name</th>
+            <th style={thS}>Status</th><th style={thS}>Maker</th><th style={thS}>Created At</th><th style={thS}>Target ID</th>
+          </tr></thead>
+          <tbody>
+            {MOCK_TICKETS.map(r=>{
+              const s=STATUS_STYLE[r.status];
+              const hasDetail=!!REQUEST_DETAIL[r.id];
+              return(
+                <tr key={r.id} onClick={()=>hasDetail&&onOpenRequest(r.id)} style={{cursor:hasDetail?"pointer":"default"}}
+                  onMouseEnter={e=>{if(hasDetail)e.currentTarget.style.background=C.bg2}}
+                  onMouseLeave={e=>{e.currentTarget.style.background=C.bg}}>
+                  <td style={tdS}>{r.id}</td>
+                  <td style={{...tdS,color:C.t2}}>{r.activityId}</td>
+                  <td style={tdS}>{r.name}</td>
+                  <td style={tdS}><span style={{display:"inline-flex",alignItems:"center",padding:"2px 8px",borderRadius:4,fontSize:12,fontWeight:500,background:s.bg,color:s.c,border:`1px solid ${s.b}`}}>{r.status}</span></td>
+                  <td style={tdS}>{r.maker}</td>
+                  <td style={{...tdS,color:C.t2}}>{r.created}</td>
+                  <td style={tdS}>{r.target}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   APP — placement and display mode are
+   locked, no comparison dropdowns. Only
+   controls left are the ones an agent would
+   actually use: open/close and mute.
+═══════════════════════════════════════ */
+function App(){
+  const [panelOpen,setPanelOpen]=useState(true);
+  const [collapsed,setCollapsed]=useState(false);
+  const [page,setPage]=useState("home");
+  const [openRequestId,setOpenRequestId]=useState(null);
+  const [muted,setMuted]=useState(false);
+  const unreadCount=muted?0:ITEMS.filter(i=>i.status==="unread").length;
+
+  const openRequest=(id)=>{
+    setPage("gmc-tickets");
+    setOpenRequestId(id);
+    setPanelOpen(false);
+  };
+
+  return(
+    <div style={{height:"100vh",padding:"20px 24px",display:"flex",flexDirection:"column",boxSizing:"border-box"}}>
+      <div style={{position:"relative",display:"flex",flex:1,minHeight:0,height:"100%",background:C.bg,overflow:"hidden"}}>
+        <Sidebar panelOpen={panelOpen} onToggle={()=>setPanelOpen(o=>!o)} unreadCount={unreadCount} collapsed={collapsed} onToggleCollapse={()=>setCollapsed(c=>!c)} page={page} onNavigate={setPage}/>
+        <div style={{flex:1,height:"100%",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
+          {page==="home"&&<HomepageView/>}
+          {page==="gmc-tickets"&&<TicketsTable onOpenRequest={setOpenRequestId}/>}
+          {panelOpen &&
+            <RightPanel
+              onOpenRequest={openRequest}
+              muted={muted}
+              onToggleMute={()=>setMuted(m=>!m)}
+            />
+          }
+        </div>
+      </div>
+
+      {openRequestId&&<RequestDetailModal requestId={openRequestId} onClose={()=>setOpenRequestId(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
